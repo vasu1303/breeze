@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import { listen } from "@tauri-apps/api/event";
@@ -12,72 +12,168 @@ function App() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const socketRef = useRef<any>(null);
 
-  const startRecording = async() => {
+  const stopRecording = useCallback( () => {
+    console.log("Stopping Recording...");
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      // Stop all tracks to release microphone
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+    }
+    if (socketRef.current) {
+      socketRef.current.finish();
+      socketRef.current = null;
+    }
+    setStatus("Idle");
+  }, []);
+const startRecording = useCallback(async () => {
+  try {
+    console.log("Starting recording sequence..");
     setStatus("Connecting to Deepgram...");
+    setTranscript(""); // clear old transcript
 
-    const deepgram = createClient(import.meta.env.VITE_DEEPGRAM_API_KEY);
+    const apiKey = import.meta.env.VITE_DEEPGRAM_API_KEY;
+    if (!apiKey) {
+      alert("API Key is missing");
+      setStatus("Error: No API Key");
+      return;
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: true, // keep it simple, let the browser pick details
+    });
+
+    const mediaRecorder = new MediaRecorder(stream, {
+      mimeType: "audio/webm;codecs=opus",
+    });
+    mediaRecorderRef.current = mediaRecorder;
+
+    const deepgram = createClient(apiKey);
     const connection = deepgram.listen.live({
       model: "nova-2",
       smart_format: true,
       language: "en-US",
+      interim_results: true,
     });
 
     socketRef.current = connection;
 
-    //SETUP MIC
-
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true});
-    const mediaRecorder = new MediaRecorder(stream);
-    mediaRecorderRef.current = mediaRecorder;
-
-    //HANDLE EVENTS
     connection.on(LiveTranscriptionEvents.Open, () => {
+      console.log("Deepgram socket opened");
       setStatus("Listening...");
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0 && connection.getReadyState() === 1) {
-          connection.send(event.data);
-        }
-      };
-      mediaRecorder.start(250); // Sending audio chunks every 250ms
-    })
-    connection.on(LiveTranscriptionEvents.Transcript, (data) => {
-      const receivedText = data.channel.alternatives[1].transcript;
-      if (receivedText) {
-        setTranscript((prev) => prev + " " + receivedText);
-        console.log("Deepgram says:", receivedText);
+      if (mediaRecorder.state === "inactive") {
+        mediaRecorder.start(250);
+        console.log("MediaRecorder started after socket open");
       }
     });
 
-    connection.on(LiveTranscriptionEvents.Error, (err) => console.error(err));
-  };
+    connection.on(LiveTranscriptionEvents.Close, () => {
+      console.log("Deepgram socket closed");
+      setStatus("Idle");
+      if (mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+      }
+    });
 
-  const stopRecording = () => {
-    mediaRecorderRef.current?.stop();
-    socketRef.current?.finish();
-    setStatus("Idle");
+    connection.on(LiveTranscriptionEvents.Error, (err) => {
+      console.error("Deepgram error:", err);
+      setStatus("Error: Deepgram connection failed");
+      if (mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+      }
+    });
+
+    connection.on(LiveTranscriptionEvents.Transcript, (data: any) => {
+      // Log the raw event once to inspect the actual shape
+      console.log("Raw DG event:", data);
+
+      const text =
+        data?.channel?.alternatives?.[0]?.transcript ?? "";
+      const isFinal = Boolean(data?.is_final);
+
+      console.log("Transcript event:", { text, isFinal });
+
+      if (text && text.trim().length > 0) {
+        setTranscript((prev) => (prev + " " + text).trim());
+      }
+    });
+
+    // IMPORTANT: send raw bytes, don't gate on readyState
+    mediaRecorder.ondataavailable = async (event) => {
+      if (event.data.size === 0) return;
+
+      try {
+        const buffer = await event.data.arrayBuffer();
+        console.log("Sending chunk to Deepgram, bytes=", buffer.byteLength);
+        connection.send(buffer);
+      } catch (err) {
+        console.error("Error converting blob to ArrayBuffer:", err);
+      }
+    };
+  } catch (err) {
+    console.error("startRecording failed:", err);
+    setStatus("Error: " + (err as Error)?.message);
+    stopRecording();
   }
+}, [stopRecording]);
 
+  // Use a ref to track status to avoid stale closures
+  const statusRef = useRef(status);
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
 
   useEffect(() => {
-    const unlisten =  listen("shortcut-pressed", () => {
-      // TOGGLE LOGIC
+    let unlistenFn: (() => void) | null = null;
 
-      if (status === "Idle") {
+    // Guard: Tauri APIs only exist when running under Tauri; in plain Vite they are undefined
+    const hasTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+    if (!hasTauri) {
+      console.warn("Tauri internals not found; shortcut listener skipped (run via `npm run tauri dev`).");
+      return;
+    }
+
+    listen("shortcut-pressed", () => {
+      // TOGGLE LOGIC - use ref to get current status
+      if (statusRef.current === "Idle") {
         startRecording();
       } else {
         stopRecording();
       }
+    }).then((unlisten) => {
+      unlistenFn = unlisten;
+    }).catch((err) => {
+      console.error("Failed to set up shortcut listener:", err);
     });
 
     return () => {
-      unlisten.then((f) => f());
-    }
-  }, [status, startRecording, stopRecording]);
+      if (unlistenFn) {
+        unlistenFn();
+      }
+    };
+  }, [startRecording, stopRecording]);
   async function greet() {
     // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
     setGreetMsg(await invoke("greet", { name }));
   }
+
+  const testDeepgramAPI = async () => {
+  try {
+    const apiKey = import.meta.env.VITE_DEEPGRAM_API_KEY;
+    const response = await fetch('https://api.deepgram.com/v1/listen', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${apiKey}`,
+        'Content-Type': 'audio/wav'
+      },
+      body: await fetch('https://static.deepgram.com/examples/Bueller-Life-moves-pretty-fast.wav').then(r => r.blob())
+    });
+    const result = await response.json();
+    console.log('API Test Result:', result);
+    alert('API works! Check console for transcription.');
+  } catch (err) {
+    console.error('API Test failed:', err);
+  }
+};
 
 
 
@@ -101,6 +197,29 @@ function App() {
       </form>
       <p>{greetMsg}</p>
       <p>{status}</p>
+      <div className="row" style={{ gap: "8px", marginBottom: "12px" }}>
+        <button
+          type="button"
+          onClick={() => {
+            if (statusRef.current === "Idle") {
+              startRecording();
+            }
+          }}
+        >
+          Start Recording
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (statusRef.current !== "Idle") {
+              stopRecording();
+            }
+          }}
+        >
+          Stop Recording
+        </button>
+      </div>
+      <button onClick={testDeepgramAPI}>TRANSCRIBE TEXT</button>
       <p>{transcript || "Transcribed text will appear here..."}</p>
     </main>
   );
