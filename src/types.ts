@@ -8,6 +8,6 @@ export enum TranscriptionStatus   {
 export enum TabId {
   Live = "Live",
   HowToUse = "How to Use",
-  WhatIsBreeze = "What is Breeze",
+  WhatIsBreeze = "What is Breezer",
   BuiltBy = "Built By"
 }

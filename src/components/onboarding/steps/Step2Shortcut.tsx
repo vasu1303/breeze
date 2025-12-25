@@ -12,7 +12,7 @@ export const Step2Shortcut: React.FC<Step2ShortcutProps> = ({ onNext }) => {
       </div>
       <h3 className="text-zinc-600 font-semibold mb-2">Global Shortcuts</h3>
       <p className="text-zinc-500 text-sm mb-6">
-        You can control Breeze from anywhere on your computer using these shortcuts:
+        You can control Breezer from anywhere on your computer using these shortcuts:
       </p>
       
       {/* Start Recording */}

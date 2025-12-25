@@ -1,4 +1,4 @@
-# Breeze
+# Breezer
 
 A high-performance desktop application for real-time voice-to-text transcription that seamlessly injects transcribed text into any active application window. Built with Tauri v2, React, and Deepgram's Nova-2 speech recognition model.
 
@@ -9,7 +9,7 @@ Video Walkthrough: [Click Here](https://drive.google.com/file/d/1NsexyJK3gJskENx
 
 ## Overview
 
-Breeze enables users to speak naturally and have their words automatically typed into whichever application is currently focused, whether that's VS Code, Slack, Notion, or any other text input field. The application runs in the background with minimal resource usage and provides an invisible interface that stays out of your way.
+Breezer enables users to speak naturally and have their words automatically typed into whichever application is currently focused, whether that's VS Code, Slack, Notion, or any other text input field. The application runs in the background with minimal resource usage and provides an invisible interface that stays out of your way.
 
 ## Features
 
@@ -69,7 +69,7 @@ The application follows a client-server architecture where the React frontend ha
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd breeze
+cd breezer
 ```
 
 2. Install frontend dependencies:
@@ -139,7 +139,7 @@ This generates platform-specific installers in `src-tauri/target/release/bundle/
 ## Project Structure
 
 ```
-breeze/
+breezer/
 ├── src/                          # React frontend source
 │   ├── components/              # React components
 │   │   ├── dashboard/          # Main dashboard views

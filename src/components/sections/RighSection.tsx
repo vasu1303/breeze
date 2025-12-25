@@ -29,13 +29,13 @@ export default function RightSection({
       {activeTab === TabId.HowToUse && (
         <img 
           src={hornIcon} 
-          alt="Breeze mascot" 
+          alt="Breezer mascot" 
           className="absolute bottom-0 left-9 w-56 h-56 opacity-80 -translate-x-8 translate-y-4 pointer-events-none z-20"
           style={{ width: '324px', height: '324px' }}
         />
       )}
       
-      {/* Flow Image - Bottom Right (only on What is Breeze page) */}
+      {/* Flow Image - Bottom Right (only on What is Breezer page) */}
       {activeTab === TabId.WhatIsBreeze && (
         <img 
           src={flowImage} 

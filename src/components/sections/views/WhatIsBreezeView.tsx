@@ -10,10 +10,10 @@ export const WhatIsBreezeView: React.FC = () => {
       </h2>
       <div className="p-6 border border-1 rounded-xl backdrop-blur-md space-y-4">
         <p className="leading-relaxed">
-          Breeze is designed to be <b>heard, not seen</b>.
+          Breezer is designed to be <b>heard, not seen</b>.
         </p>
         <p className="leading-relaxed">
-          Unlike traditional dictation tools, Breeze runs in the background and
+          Unlike traditional dictation tools, Breezer runs in the background and
           injects text directly into your active window. Whether that's VS Code,
           Slack, or Notion.
         </p>
