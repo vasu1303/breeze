@@ -1,15 +1,21 @@
-import "./App.css";
+import { useState } from "react";
 import { useShortcut } from "./hooks/useShortcut";
 import { useTranscription } from "./hooks/useTranscription";
-import { TranscriptionStatus } from "./types";
+import { TabId, TranscriptionStatus } from "./types";
+import LeftSection from "./components/sections/LeftSection";
+import RightSection from "./components/sections/RighSection";
 
 function App() {
+  const [activeTab, setActiveTab] = useState<TabId>(TabId.Live);
+
+  const [ hasOnboarded, setHasOnBoarded ] = useState(false);
 
   const { status, transcript, startRecording, stopRecording } = useTranscription();
 
   const handleToggle = () => {
     if (status === TranscriptionStatus.IDLE || status === TranscriptionStatus.ERROR ){
-      startRecording();
+      setActiveTab(TabId.Live);
+      startRecording(true);
     } else {
       stopRecording();
     };
@@ -18,23 +24,19 @@ function App() {
   useShortcut(handleToggle);
 
   return (
-    <main className="container">
-      <h1>Welcome to Breeze</h1>
-      <h2>Your seamless voice to text transcriber!</h2>
-      <p>{status}</p>
+    <main className="flex h-screen w-screen  text-zinc-100 font-sans selection:bg-teal-500/30 overflow-hidden">
+      <LeftSection activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <div>
-        <button onClick={startRecording} disabled={status === TranscriptionStatus.LISTENING || status === TranscriptionStatus.CONNECTING}>
-          Start
-        </button>
-        <button onClick={stopRecording} disabled={status === TranscriptionStatus.IDLE}>
-          Stop
-        </button>
-      </div>
-      <div>
-        { transcript || "Press ctrl + T or start to speak"}
-      </div>
-
+      <RightSection
+        activeTab={activeTab}
+        status={status}
+        transcript={transcript}
+        onStart={() => {
+          setActiveTab(TabId.Live);
+          startRecording(true);
+        }}
+        onStop={stopRecording}
+      />
     </main>
   );
 }

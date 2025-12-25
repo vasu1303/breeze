@@ -27,7 +27,7 @@ export function useTranscription() {
         setStatus(TranscriptionStatus.IDLE);
     }, []);
 
-    const startRecording = useCallback(async () => {
+    const startRecording = useCallback(async (broadcast = true) => {
         try {
             setStatus(TranscriptionStatus.CONNECTING);
             setTranscript("");
@@ -53,7 +53,9 @@ export function useTranscription() {
 
                 if (received && isFinal) {
                     setTranscript((prev) => prev + " " + received);
-                    typeText(received + " ");
+                    if (broadcast) {
+                        typeText(received + " ");
+                    }
                 };
             });
 

@@ -1,0 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cedarville+Cursive&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+:root {
+	--color-primary: #E8E6E9;
+	--color-primary-bg: #E0E0CA;
+	--color-secondary: #F5F5F2;
+	--color-tertiary: #EFE9E3;
+	--color-lightest: #F9F8F6;
+    --color-boxbg: #FFFFE8;
+	--font-sans: 'Poppins', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+}
+
+body {
+	font-family: var(--font-sans);
+}
