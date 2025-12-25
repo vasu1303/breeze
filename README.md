@@ -1,7 +1,7 @@
 # Breeze
 
 A high-performance desktop application for real-time voice-to-text transcription that seamlessly injects transcribed text into any active application window. Built with Tauri v2, React, and Deepgram's Nova-2 speech recognition model.
-
+Video Walkthrough: [https://drive.google.com/file/d/1NsexyJK3gJskENxpAzbJP3-_-Av3ux92/view](Click Here)
 <img width="1915" height="1109" alt="image" src="https://github.com/user-attachments/assets/a3afe4fe-08a1-4cf8-9a43-b036a27c5ac6" />
 
 
